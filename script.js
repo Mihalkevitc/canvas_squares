@@ -84,8 +84,8 @@ for (let i = 0; i < 10000; i++) {
     let randomX = Math.random() * canvas.width;
     let randomY = Math.random() * canvas.height;
     let randomColor = Math.random() > 0.5 ? '#FF69B4' : 'white';
-    let randomSpeedX = (Math.random() - 0.5) * 4; // от -2 до 2
-    let randomSpeedY = (Math.random() - 0.5) * 4; // от -2 до 2
+    let randomSpeedX = (Math.random() - 0.5) * 2; // от -1 до 1
+    let randomSpeedY = (Math.random() - 0.5) * 2; // от -1 до 1
     
     squares.push(new Square(
         randomX, randomY, 
