@@ -7,7 +7,7 @@ canvas.height = window.innerHeight;
 canvas.style.position = 'absolute';
 canvas.style.top = '0px';
 canvas.style.left = '0px';
-// Скрывает полосы прокрутки сверху и снизу
+// Скрывает полосы прокрутки снизу и справа
 document.body.style.overflow = 'hidden' 
 
 canvas.style.border = '1px solid black'
@@ -84,8 +84,8 @@ for (let i = 0; i < 10000; i++) {
     let randomX = Math.random() * canvas.width;
     let randomY = Math.random() * canvas.height;
     let randomColor = Math.random() > 0.5 ? '#FF69B4' : 'white';
-    let randomSpeedX = (Math.random() - 0.5) * 8; // от -4 до 4
-    let randomSpeedY = (Math.random() - 0.5) * 8; // от -4 до 4
+    let randomSpeedX = (Math.random() - 0.5) * 4; // от -2 до 2
+    let randomSpeedY = (Math.random() - 0.5) * 4; // от -2 до 2
     
     squares.push(new Square(
         randomX, randomY, 
