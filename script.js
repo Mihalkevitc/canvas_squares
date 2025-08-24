@@ -148,8 +148,8 @@ canvas.addEventListener('mousemove', function(event) {
         let magnitude = dx * dx + dy * dy;
         if (magnitude > 0) {
             magnitude = Math.sqrt(magnitude);
-            squares[i].speedX = dx / magnitude * 3;
-            squares[i].speedY = dy / magnitude * 3;
+            squares[i].speedX = dx / magnitude * 2;
+            squares[i].speedY = dy / magnitude * 2;
         }
     }
 });
