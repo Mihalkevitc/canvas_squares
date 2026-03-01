@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Particle Library Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: black;
+        }
+        
+        canvas {
+            display: block;
+            cursor: default;  /* вместо crosshair */
+        }
+        
+        .info {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            z-index: 100;
+            pointer-events: none;
+            backdrop-filter: blur(5px);
+        }
+        
+        .info h1 {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        
+        .stats {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 100;
+            pointer-events: none;
+            backdrop-filter: blur(5px);
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particle-canvas"></canvas>
+    <div class="info">
+        <h1>✨ Particle Library Demo</h1>
+        <p>Частицы летают случайно и стремятся к курсору</p>
+    </div>
+    <div class="stats">
+        <div>🎯 Частиц: <span id="particle-count">0</span></div>
+        <div>🎨 Поведение: followMouse</div>
+    </div>
+    
+    <script type="module">
+        import { ParticleSystem } from './src/index.ts';
+        
+        const canvas = document.getElementById('particle-canvas');
+        
+        // Устанавливаем размер canvas на весь экран
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const ps = new ParticleSystem();
+        
+        ps.init({
+            canvas: canvas,
+            config: {
+                particleCount: 10000,
+                colors: ['#FF69B4', '#FFFFFF'],
+                particleSize: 5,
+                maxSpeed: 2,
+                behavior: 'followMouse'
+            }
+        });
+        
+        // Обновляем счётчик частиц
+        document.getElementById('particle-count').innerText = '10000';
+        
+        // Адаптация при изменении размера окна
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+        
+        console.log('Particle Library Demo started!');
+    </script>
+</body>
+</html>

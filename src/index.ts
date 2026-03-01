@@ -1,0 +1,10 @@
+// Главный файл библиотеки - экспортирует всё необходимое для внешнего использования
+export { ParticleSystem } from './core/ParticleSystem';
+export type { ParticleSystemConfig } from './core/ParticleSystem';
+export { Particle } from './core/Particle';
+export type { IBehavior } from './behaviors/IBehavior';
+export { FollowMouseBehavior } from './behaviors/FollowMouseBehavior';
+export { GravityBehavior } from './behaviors/GravityBehavior';
+export { Renderer } from './rendering/Renderer';
+export { ConfigLoader } from './loaders/ConfigLoader';
+export type { ParticleConfig } from './loaders/ConfigLoader';

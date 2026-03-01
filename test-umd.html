@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Particle Library UMD Test</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: black; }
+        canvas { display: block; cursor: default; }
+    </style>
+</head>
+<body>
+    <canvas id="particle-canvas"></canvas>
+    
+    <script src="./dist/particle-lib.umd.js"></script>
+    <script>
+        const canvas = document.getElementById('particle-canvas');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const ps = new ParticleLib.ParticleSystem();
+        ps.init({
+            canvas: canvas,
+            config: {
+                particleCount: 10000,
+                colors: ['#FF69B4', '#FFFFFF'],
+                particleSize: 5,
+                maxSpeed: 2,
+                behavior: 'followMouse'
+            }
+        });
+        
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+</html>
