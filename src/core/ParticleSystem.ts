@@ -1,4 +1,8 @@
 import { Particle } from './Particle';
+import { IBehavior } from '../behaviors/IBehavior';
+import { FollowMouseBehavior } from '../behaviors/FollowMouseBehavior';
+import { GravityBehavior } from '../behaviors/GravityBehavior';
+import { RepulseBehavior } from '../behaviors/RepulseBehavior';
 import { ConfigLoader, ParticleConfig } from '../loaders/ConfigLoader';
 
 export interface ParticleSystemConfig {
@@ -13,8 +17,16 @@ export class ParticleSystem {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private particles: Particle[] = [];
+  private behavior: IBehavior;
+  private configLoader: ConfigLoader;
   private animationId: number | null = null;
   private isRunning: boolean = false;
+  private currentBehaviorName: string = 'followMouse';
+
+  constructor() {
+    this.behavior = new FollowMouseBehavior();
+    this.configLoader = new ConfigLoader();
+  }
 
   async init(config: ParticleSystemConfig): Promise<void> {
     if (config.canvas) {
@@ -27,7 +39,6 @@ export class ParticleSystem {
       throw new Error('Either canvasId or canvas element must be provided');
     }
 
-    // Настройка canvas КАК В ОРИГИНАЛЕ
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
     this.canvas.style.position = 'absolute';
@@ -35,28 +46,25 @@ export class ParticleSystem {
     this.canvas.style.left = '0px';
     this.canvas.style.border = '1px solid black';
     
-    // Скрываем скролл
     document.body.style.overflow = 'hidden';
     document.body.style.margin = '0';
     document.body.style.background = 'black';
     
     this.ctx = this.canvas.getContext('2d')!;
     
-    // Загрузка конфигурации (упрощённо)
     let particleConfig: ParticleConfig = config.config!;
-    
     this.createParticles(particleConfig);
     
-    // Обработчик мыши КАК В ОРИГИНАЛЕ
-    this.setupMouseListener();
+    if (particleConfig.behavior) {
+      this.setBehavior(particleConfig.behavior);
+    }
     
-    // Запуск анимации КАК В ОРИГИНАЛЕ (без контроля FPS)
+    this.setupMouseListener();
     this.start();
   }
 
   private createParticles(config: ParticleConfig): void {
     this.particles = [];
-    
     for (let i = 0; i < config.particleCount; i++) {
       const x = Math.random() * this.canvas.width;
       const y = Math.random() * this.canvas.height;
@@ -64,8 +72,25 @@ export class ParticleSystem {
       const vy = (Math.random() - 0.5) * config.maxSpeed;
       const color = config.colors[Math.floor(Math.random() * config.colors.length)];
       const size = config.particleSize;
-      
       this.particles.push(new Particle(x, y, vx, vy, size, color));
+    }
+  }
+
+  // Публичный метод для смены поведения
+  setBehavior(behaviorName: string, params?: any): void {
+    this.currentBehaviorName = behaviorName;
+    
+    switch (behaviorName) {
+      case 'gravity':
+        this.behavior = new GravityBehavior(params?.G || 0.05);
+        break;
+      case 'repulse':
+        this.behavior = new RepulseBehavior(params?.radius || 100, params?.force || 0.8);
+        break;
+      case 'followMouse':
+      default:
+        this.behavior = new FollowMouseBehavior();
+        break;
     }
   }
 
@@ -75,30 +100,25 @@ export class ParticleSystem {
       const mouseX = event.clientX - rect.left;
       const mouseY = event.clientY - rect.top;
       
-      for (let i = 0; i < this.particles.length; i++) {
-        const dx = mouseX - this.particles[i].x;
-        const dy = mouseY - this.particles[i].y;
-        let magnitude = dx * dx + dy * dy;
-        if (magnitude > 0) {
-          magnitude = Math.sqrt(magnitude);
-          this.particles[i].vx = (dx / magnitude) * 2;
-          this.particles[i].vy = (dy / magnitude) * 2;
-        }
-      }
+      // Применяем поведение, реагирующее на мышь
+      this.behavior.apply(this.particles, mouseX, mouseY);
     });
   }
 
   private animate = (): void => {
     if (!this.isRunning) return;
     
-    // 1. Стираем всё
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     
-    // 2. Обновляем и рисуем каждую частицу (как в оригинале)
+    // Для гравитации применяем поведение в каждом кадре (без мыши)
+    if (this.currentBehaviorName === 'gravity') {
+      this.behavior.apply(this.particles);
+    }
+    
     for (let i = 0; i < this.particles.length; i++) {
       this.particles[i].update();
       
-      // Проверка границ (как в оригинале)
+      // Проверка границ
       if (this.particles[i].x > this.canvas.width) this.particles[i].x = -this.particles[i].size;
       if (this.particles[i].x < -this.particles[i].size) this.particles[i].x = this.canvas.width;
       if (this.particles[i].y > this.canvas.height) this.particles[i].y = -this.particles[i].size;
