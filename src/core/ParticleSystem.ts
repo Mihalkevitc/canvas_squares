@@ -22,6 +22,8 @@ export class ParticleSystem {
   private animationId: number | null = null;
   private isRunning: boolean = false;
   private currentBehaviorName: string = 'followMouse';
+  private gravityBehavior: GravityBehavior | null = null;
+  private isMouseDown: boolean = false;
 
   constructor() {
     this.behavior = new FollowMouseBehavior();
@@ -56,10 +58,10 @@ export class ParticleSystem {
     this.createParticles(particleConfig);
     
     if (particleConfig.behavior) {
-      this.setBehavior(particleConfig.behavior);
+      this.setBehavior(particleConfig.behavior, particleConfig.behaviorParams);
     }
     
-    this.setupMouseListener();
+    this.setupMouseListeners();
     this.start();
   }
 
@@ -68,24 +70,33 @@ export class ParticleSystem {
     for (let i = 0; i < config.particleCount; i++) {
       const x = Math.random() * this.canvas.width;
       const y = Math.random() * this.canvas.height;
-      const vx = (Math.random() - 0.5) * config.maxSpeed;
-      const vy = (Math.random() - 0.5) * config.maxSpeed;
+      const vx = (Math.random() - 0.5) * 1.5;
+      const vy = (Math.random() - 0.5) * 1.5;
       const color = config.colors[Math.floor(Math.random() * config.colors.length)];
       const size = config.particleSize;
       this.particles.push(new Particle(x, y, vx, vy, size, color));
     }
   }
 
-  // Публичный метод для смены поведения
   setBehavior(behaviorName: string, params?: any): void {
     this.currentBehaviorName = behaviorName;
+    this.isMouseDown = false;
     
     switch (behaviorName) {
       case 'gravity':
-        this.behavior = new GravityBehavior(params?.G || 0.05);
+        this.gravityBehavior = new GravityBehavior(
+          params?.strength ?? 0.1,
+          params?.maxSpeed ?? 4
+        );
+        this.behavior = this.gravityBehavior;
         break;
       case 'repulse':
-        this.behavior = new RepulseBehavior(params?.radius || 100, params?.force || 0.8);
+        this.behavior = new RepulseBehavior(
+          params?.radius ?? 150,
+          params?.force ?? 3.0,
+          params?.damping ?? 0.97,
+          params?.minSpeed ?? 0.2
+        );
         break;
       case 'followMouse':
       default:
@@ -94,14 +105,42 @@ export class ParticleSystem {
     }
   }
 
-  private setupMouseListener(): void {
+  private setupMouseListeners(): void {
+    // Нажатие мыши — активируем центр притяжения (для гравитации)
+    this.canvas.addEventListener('mousedown', (event) => {
+      const rect = this.canvas.getBoundingClientRect();
+      const mouseX = event.clientX - rect.left;
+      const mouseY = event.clientY - rect.top;
+      
+      if (this.currentBehaviorName === 'gravity' && this.gravityBehavior) {
+        this.gravityBehavior.setCenter(mouseX, mouseY);
+        this.isMouseDown = true;
+      } else {
+        this.isMouseDown = false;
+      }
+    });
+
+    // Движение мыши — перемещаем центр при зажатой кнопке
     this.canvas.addEventListener('mousemove', (event) => {
       const rect = this.canvas.getBoundingClientRect();
       const mouseX = event.clientX - rect.left;
       const mouseY = event.clientY - rect.top;
       
-      // Применяем поведение, реагирующее на мышь
-      this.behavior.apply(this.particles, mouseX, mouseY);
+      if (this.currentBehaviorName === 'gravity' && this.gravityBehavior && this.isMouseDown) {
+        // Перемещаем центр гравитации
+        this.gravityBehavior.setCenter(mouseX, mouseY);
+      } else if (this.currentBehaviorName !== 'gravity') {
+        // Для остальных поведений — обычная реакция на мышь
+        this.behavior.apply(this.particles, mouseX, mouseY);
+      }
+    });
+
+    // Отпускание мыши — выключаем центр притяжения
+    this.canvas.addEventListener('mouseup', () => {
+      if (this.currentBehaviorName === 'gravity' && this.gravityBehavior) {
+        this.gravityBehavior.clearCenter();
+        this.isMouseDown = false;
+      }
     });
   }
 
@@ -110,10 +149,8 @@ export class ParticleSystem {
     
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     
-    // Для гравитации применяем поведение в каждом кадре (без мыши)
-    if (this.currentBehaviorName === 'gravity') {
-      this.behavior.apply(this.particles);
-    }
+    // Применяем поведение
+    this.behavior.apply(this.particles);
     
     for (let i = 0; i < this.particles.length; i++) {
       this.particles[i].update();
