@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Particle Library - Все поведения</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; background: black; font-family: 'Segoe UI', monospace; }
+        canvas { display: block; cursor: default; }
+        
+        .panel {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            border-radius: 12px;
+            color: white;
+            z-index: 100;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid rgba(255,255,255,0.2);
+            font-size: 13px;
+        }
+        
+        .controls-left {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        select, button {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            background: #2a2a2a;
+            color: white;
+            cursor: pointer;
+            font-size: 13px;
+            transition: 0.2s;
+        }
+        
+        select:hover, button:hover {
+            background: #3a3a3a;
+            transform: scale(1.02);
+        }
+        
+        button {
+            background: #ff4757;
+        }
+        
+        button:hover {
+            background: #ff6b7c;
+        }
+        
+        .param-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 12px;
+            border-radius: 20px;
+        }
+        
+        .param-panel label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+        
+        input[type="range"] {
+            width: 120px;
+            cursor: pointer;
+        }
+        
+        .info {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 16px;
+            border-radius: 12px;
+            color: white;
+            font-size: 12px;
+            text-align: right;
+            z-index: 100;
+            font-family: monospace;
+            backdrop-filter: blur(5px);
+        }
+        
+        .badge {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 10px;
+            color: #aaa;
+            z-index: 100;
+        }
+        
+        @media (max-width: 700px) {
+            .panel { flex-direction: column; align-items: stretch; bottom: 10px; left: 10px; right: 10px; }
+            .controls-left { justify-content: space-between; }
+            .param-panel { justify-content: space-between; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particle-canvas"></canvas>
+    
+    <div class="panel">
+        <div class="controls-left">
+            <select id="behavior-select">
+                <option value="followMouse">🐭 Следование за курсором</option>
+                <option value="gravity">🌍 Гравитационный шар (зажми ЛКМ)</option>
+                <option value="repulse">💨 Отталкивание от курсора</option>
+                <option value="magneticField">🧲 Магнитное поле</option>
+                <option value="vortex">🌪️ Вихрь вокруг курсора</option>
+                <option value="wave">🌊 Волновое движение</option>
+                <option value="explosion">💥 Взрыв (клик ЛКМ)</option>
+            </select>
+            <button id="reset">🔄 Сбросить частицы</button>
+        </div>
+        
+        <div id="param-container" class="param-panel"></div>
+    </div>
+    
+    <div class="info">
+        <div>📊 Частиц: <span id="particle-count">800</span></div>
+        <div>🎮 Поведение: <span id="current-behavior">followMouse</span></div>
+        <div>🖱️ <span id="hint">Двигай мышью</span></div>
+    </div>
+    <div class="badge">Particle Library | 7 behaviors</div>
+    
+    <script type="module">
+        import { ParticleSystem } from './src/index.ts';
+        
+        const canvas = document.getElementById('particle-canvas');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const ps = new ParticleSystem();
+        const select = document.getElementById('behavior-select');
+        const resetBtn = document.getElementById('reset');
+        const currentSpan = document.getElementById('current-behavior');
+        const hintSpan = document.getElementById('hint');
+        const paramContainer = document.getElementById('param-container');
+        
+        let gravityStrength = 0.1;
+        let repulseRadius = 150;
+        let vortexStrength = 0.15;
+        
+        // Общая конфигурация частиц
+        const baseConfig = {
+            canvas: canvas,
+            config: {
+                particleCount: 10000,
+                colors: ['#FF69B4', '#FFFFFF', '#00FFAA', '#FFAA00', '#00AAFF', '#FF6B6B', '#4ECDC4'],
+                particleSize: 4,
+                maxSpeed: 2,
+                behavior: 'followMouse'
+            }
+        };
+        
+        // Функция обновления параметров для Repulse
+        function updateRepulseParams() {
+            const radius = parseFloat(document.getElementById('repulse-radius')?.value || 150);
+            const force = parseFloat(document.getElementById('repulse-force')?.value || 3);
+            ps.setBehavior('repulse', { radius, force, damping: 0.97, minSpeed: 0.2 });
+        }
+        
+        // Функция обновления параметров для Gravity
+        function updateGravityParams() {
+            const strength = parseFloat(document.getElementById('gravity-strength')?.value || 0.1);
+            gravityStrength = strength;
+            ps.setBehavior('gravity', { strength: strength, maxSpeed: 4 });
+        }
+        
+        // Функция обновления параметров для Vortex
+        function updateVortexParams() {
+            const strength = parseFloat(document.getElementById('vortex-strength')?.value || 0.15);
+            const maxSpeed = parseFloat(document.getElementById('vortex-maxspeed')?.value || 4);
+            ps.setBehavior('vortex', { 
+                strength: strength, 
+                radius: 300, 
+                maxSpeed: maxSpeed 
+            });
+        }
+        
+        // Функция обновления параметров для MagneticField
+        function updateMagneticParams() {
+            const strength = parseFloat(document.getElementById('magnetic-strength')?.value || 0.02);
+            ps.setBehavior('magneticField', { strength: strength, fieldStrength: 0.5 });
+        }
+        
+        // Функция обновления параметров для Wave
+        function updateWaveParams() {
+            const amplitude = parseFloat(document.getElementById('wave-amp')?.value || 0.5);
+            ps.setBehavior('wave', { amplitude: amplitude, frequency: 0.02, mouseInfluence: 2.0 });
+        }
+        
+        // Обработчик смены поведения
+        select.addEventListener('change', async () => {
+            const behavior = select.value;
+            currentSpan.textContent = behavior;
+            
+            // Обновляем подсказку
+            if (behavior === 'gravity') hintSpan.textContent = 'Зажми ЛКМ и двигай';
+            else if (behavior === 'explosion') hintSpan.textContent = 'Кликни ЛКМ для взрыва';
+            else if (behavior === 'vortex') hintSpan.textContent = 'Води мышью — вихрь';
+            else hintSpan.textContent = 'Двигай мышью';
+            
+            // Очищаем панель параметров
+            paramContainer.innerHTML = '';
+            
+            // Добавляем специфичные параметры для каждого поведения
+            if (behavior === 'repulse') {
+                paramContainer.innerHTML = `
+                    <label>📏 Радиус: <input type="range" id="repulse-radius" min="50" max="300" value="${repulseRadius}"> <span id="radius-val">${repulseRadius}</span></label>
+                    <label>💪 Сила: <input type="range" id="repulse-force" min="0.5" max="8" step="0.5" value="3"> <span id="force-val">3</span></label>
+                `;
+                const radiusSlider = document.getElementById('repulse-radius');
+                const forceSlider = document.getElementById('repulse-force');
+                const radiusVal = document.getElementById('radius-val');
+                const forceVal = document.getElementById('force-val');
+                radiusSlider.addEventListener('input', () => {
+                    radiusVal.textContent = radiusSlider.value;
+                    repulseRadius = parseFloat(radiusSlider.value);
+                    updateRepulseParams();
+                });
+                forceSlider.addEventListener('input', () => {
+                    forceVal.textContent = forceSlider.value;
+                    updateRepulseParams();
+                });
+                updateRepulseParams();
+            }
+            else if (behavior === 'gravity') {
+                paramContainer.innerHTML = `
+                    <label>🌍 Сила: <input type="range" id="gravity-strength" min="0.02" max="0.3" step="0.01" value="${gravityStrength}"> <span id="strength-val">${gravityStrength}</span></label>
+                `;
+                const strengthSlider = document.getElementById('gravity-strength');
+                const strengthVal = document.getElementById('strength-val');
+                strengthSlider.addEventListener('input', () => {
+                    strengthVal.textContent = strengthSlider.value;
+                    updateGravityParams();
+                });
+                updateGravityParams();
+            }
+            else if (behavior === 'vortex') {
+                paramContainer.innerHTML = `
+                    <label>🌀 Сила: <input type="range" id="vortex-strength" min="0.05" max="2.5" step="0.01" value="${vortexStrength}"> <span id="vortex-strength-val">${vortexStrength}</span></label>
+                    <label>⚡ Макс. скорость: <input type="range" id="vortex-maxspeed" min="1" max="8" step="0.5" value="4"> <span id="vortex-maxspeed-val">4</span></label>
+                `;
+                
+                const strengthSlider = document.getElementById('vortex-strength');
+                const strengthVal = document.getElementById('vortex-strength-val');
+                strengthSlider.addEventListener('input', () => {
+                    strengthVal.textContent = strengthSlider.value;
+                    updateVortexParams();
+                });
+                
+                // Добавляем обработчик для maxSpeed
+                const maxSpeedSlider = document.getElementById('vortex-maxspeed');
+                const maxSpeedVal = document.getElementById('vortex-maxspeed-val');
+                maxSpeedSlider.addEventListener('input', () => {
+                    maxSpeedVal.textContent = maxSpeedSlider.value;
+                    updateVortexParams();
+                });
+                
+                updateVortexParams();
+            }
+            else if (behavior === 'magneticField') {
+                paramContainer.innerHTML = `
+                    <label>🧲 Сила базового поля: <input type="range" id="magnetic-strength" min="0.005" max="0.08" step="0.005" value="0.02"> <span id="mag-val">0.02</span></label>
+                    <label>⚡ Сила притяжения: <input type="range" id="magnetic-field-strength" min="0.5" max="4" step="0.1" value="1.5"> <span id="field-val">1.5</span></label>
+                    <label>📏 Радиус: <input type="range" id="magnetic-radius" min="50" max="300" step="10" value="200"> <span id="mag-radius-val">200</span></label>
+                    <label>🏃 Макс. скорость: <input type="range" id="magnetic-maxspeed" min="2" max="8" step="0.5" value="4"> <span id="mag-maxspeed-val">4</span></label>
+                `;
+                
+                const strengthSlider = document.getElementById('magnetic-strength');
+                const strengthVal = document.getElementById('mag-val');
+                const fieldStrengthSlider = document.getElementById('magnetic-field-strength');
+                const fieldVal = document.getElementById('field-val');
+                const radiusSlider = document.getElementById('magnetic-radius');
+                const radiusVal = document.getElementById('mag-radius-val');
+                const maxSpeedSlider = document.getElementById('magnetic-maxspeed');
+                const maxSpeedVal = document.getElementById('mag-maxspeed-val');
+                
+                const updateMagParams = () => {
+                    const strength = parseFloat(strengthSlider.value);
+                    const fieldStrength = parseFloat(fieldStrengthSlider.value);
+                    const radius = parseFloat(radiusSlider.value);
+                    const maxSpeed = parseFloat(maxSpeedSlider.value);
+                    ps.setBehavior('magneticField', { strength, fieldStrength, radius, maxSpeed });
+                };
+                
+                strengthSlider.addEventListener('input', () => {
+                    strengthVal.textContent = strengthSlider.value;
+                    updateMagParams();
+                });
+                fieldStrengthSlider.addEventListener('input', () => {
+                    fieldVal.textContent = fieldStrengthSlider.value;
+                    updateMagParams();
+                });
+                radiusSlider.addEventListener('input', () => {
+                    radiusVal.textContent = radiusSlider.value;
+                    updateMagParams();
+                });
+                maxSpeedSlider.addEventListener('input', () => {
+                    maxSpeedVal.textContent = maxSpeedSlider.value;
+                    updateMagParams();
+                });
+                updateMagParams();
+            }
+            else if (behavior === 'wave') {
+                paramContainer.innerHTML = `
+                    <label>🌊 Амплитуда: <input type="range" id="wave-amp" min="0.1" max="2.0" step="0.1" value="0.8"> <span id="amp-val">0.8</span></label>
+                    <label>📏 Частота: <input type="range" id="wave-freq" min="0.005" max="0.04" step="0.001" value="0.015"> <span id="freq-val">0.015</span></label>
+                    <label>⚡ Скорость: <input type="range" id="wave-speed" min="0.01" max="0.08" step="0.005" value="0.03"> <span id="speed-val">0.03</span></label>
+                `;
+                
+                const ampSlider = document.getElementById('wave-amp');
+                const ampVal = document.getElementById('amp-val');
+                const freqSlider = document.getElementById('wave-freq');
+                const freqVal = document.getElementById('freq-val');
+                const speedSlider = document.getElementById('wave-speed');
+                const speedVal = document.getElementById('speed-val');
+                
+                const updateWave = () => {
+                    const amplitude = parseFloat(ampSlider.value);
+                    const frequency = parseFloat(freqSlider.value);
+                    const speed = parseFloat(speedSlider.value);
+                    ps.setBehavior('wave', { amplitude, frequency, speed });
+                };
+                
+                ampSlider.addEventListener('input', () => { ampVal.textContent = ampSlider.value; updateWave(); });
+                freqSlider.addEventListener('input', () => { freqVal.textContent = freqSlider.value; updateWave(); });
+                speedSlider.addEventListener('input', () => { speedVal.textContent = speedSlider.value; updateWave(); });
+                updateWave();
+            }
+                        
+            // Устанавливаем поведение
+            if (behavior === 'repulse') updateRepulseParams();
+            else if (behavior === 'gravity') updateGravityParams();
+            else if (behavior === 'vortex') updateVortexParams();
+            else if (behavior === 'magneticField') updateMagneticParams();
+            else if (behavior === 'wave') updateWaveParams();
+            else if (behavior === 'explosion') {
+                ps.setBehavior('explosion');
+                // Для взрыва используем отдельную обработку кликов
+                setupExplosionListeners();
+            }
+            else {
+                ps.setBehavior(behavior);
+            }
+        });
+        
+        // Обработчик для взрыва
+        let explosionBehavior = null;
+        function setupExplosionListeners() {
+            if (window._explosionHandler) {
+                canvas.removeEventListener('click', window._explosionHandler);
+            }
+            const handler = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                // Временно получаем поведение и вызываем взрыв
+                if (ps['behavior'] && ps['behavior']['explode']) {
+                    ps['behavior']['explode'](x, y, 8);
+                }
+            };
+            canvas.addEventListener('click', handler);
+            window._explosionHandler = handler;
+        }
+        
+        // Сброс частиц
+        resetBtn.addEventListener('click', async () => {
+            ps.destroy();
+            await ps.init({
+                canvas: canvas,
+                config: {
+                    particleCount: 800,
+                    colors: ['#FF69B4', '#FFFFFF', '#00FFAA', '#FFAA00', '#00AAFF', '#FF6B6B', '#4ECDC4'],
+                    particleSize: 4,
+                    maxSpeed: 2,
+                    behavior: select.value
+                }
+            });
+            // Обновляем параметры после сброса
+            if (select.value === 'repulse') updateRepulseParams();
+            else if (select.value === 'gravity') updateGravityParams();
+            else if (select.value === 'vortex') updateVortexParams();
+            else if (select.value === 'magneticField') updateMagneticParams();
+            else if (select.value === 'wave') updateWaveParams();
+            else if (select.value === 'explosion') {
+                ps.setBehavior('explosion');
+                setupExplosionListeners();
+            }
+            document.getElementById('particle-count').innerText = '800';
+        });
+        
+        // Инициализация
+        await ps.init(baseConfig);
+        document.getElementById('particle-count').innerText = '800';
+        
+        // Адаптация при изменении размера окна
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+        
+        console.log('Particle Library Demo готов! 7 поведений');
+    </script>
+</body>
+</html>

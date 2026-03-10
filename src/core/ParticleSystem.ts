@@ -3,6 +3,10 @@ import { IBehavior } from '../behaviors/IBehavior';
 import { FollowMouseBehavior } from '../behaviors/FollowMouseBehavior';
 import { GravityBehavior } from '../behaviors/GravityBehavior';
 import { RepulseBehavior } from '../behaviors/RepulseBehavior';
+import { MagneticFieldBehavior } from '../behaviors/MagneticFieldBehavior';
+import { VortexBehavior } from '../behaviors/VortexBehavior';
+import { WaveBehavior } from '../behaviors/WaveBehavior';
+import { ExplosionBehavior } from '../behaviors/ExplosionBehavior';
 import { ConfigLoader, ParticleConfig } from '../loaders/ConfigLoader';
 
 export interface ParticleSystemConfig {
@@ -24,6 +28,7 @@ export class ParticleSystem {
   private currentBehaviorName: string = 'followMouse';
   private gravityBehavior: GravityBehavior | null = null;
   private isMouseDown: boolean = false;
+  private explosionBehavior: ExplosionBehavior | null = null;
 
   constructor() {
     this.behavior = new FollowMouseBehavior();
@@ -98,6 +103,32 @@ export class ParticleSystem {
           params?.minSpeed ?? 0.2
         );
         break;
+      case 'magneticField':
+        this.behavior = new MagneticFieldBehavior(
+          params?.strength ?? 0.02,
+          params?.fieldStrength ?? 1.5,
+          params?.radius ?? 200,
+          params?.maxSpeed ?? 4
+        );
+        break;
+      case 'vortex':
+        this.behavior = new VortexBehavior(
+          params?.strength ?? 0.15,
+          params?.radius ?? 200,
+          params?.maxSpeed ?? 4
+        );
+        break;
+      case 'wave':
+        this.behavior = new WaveBehavior(
+          params?.amplitude ?? 0.8,
+          params?.frequency ?? 0.015,
+          params?.speed ?? 0.03
+        );
+        break;
+      case 'explosion':
+        this.explosionBehavior = new ExplosionBehavior();
+        this.behavior = this.explosionBehavior;
+        break;
       case 'followMouse':
       default:
         this.behavior = new FollowMouseBehavior();
@@ -106,7 +137,7 @@ export class ParticleSystem {
   }
 
   private setupMouseListeners(): void {
-    // Нажатие мыши — активируем центр притяжения (для гравитации)
+    // Нажатие мыши
     this.canvas.addEventListener('mousedown', (event) => {
       const rect = this.canvas.getBoundingClientRect();
       const mouseX = event.clientX - rect.left;
@@ -120,26 +151,34 @@ export class ParticleSystem {
       }
     });
 
-    // Движение мыши — перемещаем центр при зажатой кнопке
+    // Движение мыши
     this.canvas.addEventListener('mousemove', (event) => {
       const rect = this.canvas.getBoundingClientRect();
       const mouseX = event.clientX - rect.left;
       const mouseY = event.clientY - rect.top;
       
       if (this.currentBehaviorName === 'gravity' && this.gravityBehavior && this.isMouseDown) {
-        // Перемещаем центр гравитации
         this.gravityBehavior.setCenter(mouseX, mouseY);
       } else if (this.currentBehaviorName !== 'gravity') {
-        // Для остальных поведений — обычная реакция на мышь
         this.behavior.apply(this.particles, mouseX, mouseY);
       }
     });
 
-    // Отпускание мыши — выключаем центр притяжения
+    // Отпускание мыши
     this.canvas.addEventListener('mouseup', () => {
       if (this.currentBehaviorName === 'gravity' && this.gravityBehavior) {
         this.gravityBehavior.clearCenter();
         this.isMouseDown = false;
+      }
+    });
+
+    // Клик для взрыва
+    this.canvas.addEventListener('click', (event) => {
+      if (this.currentBehaviorName === 'explosion' && this.explosionBehavior) {
+        const rect = this.canvas.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+        this.explosionBehavior.explode(mouseX, mouseY, 8);
       }
     });
   }
@@ -149,13 +188,11 @@ export class ParticleSystem {
     
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     
-    // Применяем поведение
     this.behavior.apply(this.particles);
     
     for (let i = 0; i < this.particles.length; i++) {
       this.particles[i].update();
       
-      // Проверка границ
       if (this.particles[i].x > this.canvas.width) this.particles[i].x = -this.particles[i].size;
       if (this.particles[i].x < -this.particles[i].size) this.particles[i].x = this.canvas.width;
       if (this.particles[i].y > this.canvas.height) this.particles[i].y = -this.particles[i].size;
