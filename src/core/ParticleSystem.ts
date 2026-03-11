@@ -122,16 +122,21 @@ export class ParticleSystem {
         this.behavior = new WaveBehavior(
           params?.amplitude ?? 0.8,
           params?.frequency ?? 0.015,
-          params?.speed ?? 0.03
+          params?.speed ?? 0.03,
+          params?.maxSpeed ?? 3
         );
         break;
       case 'explosion':
-        this.explosionBehavior = new ExplosionBehavior();
+        this.explosionBehavior = new ExplosionBehavior(
+          params?.radius ?? 150,
+          params?.duration ?? 10,
+          params?.damping ?? 0.99
+        );
         this.behavior = this.explosionBehavior;
         break;
       case 'followMouse':
       default:
-        this.behavior = new FollowMouseBehavior();
+        this.behavior = new FollowMouseBehavior(params?.speed ?? 2);
         break;
     }
   }

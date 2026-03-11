@@ -4,18 +4,29 @@ import { IBehavior } from './IBehavior';
 /**
  * Взрыв: при клике мыши частицы разлетаются от точки удара.
  * Сила взрыва зависит от расстояния до центра.
+ * 
+ * Параметры:
+ * - radius: радиус действия взрыва (пикселей)
+ * - duration: длительность эффекта (кадров)
+ * - damping: коэффициент торможения после взрыва
  */
 export class ExplosionBehavior implements IBehavior {
   private explosionX: number | null;
   private explosionY: number | null;
   private explosionTimer: number;
   private explosionStrength: number;
+  private explosionRadius: number;
+  private explosionDuration: number;
+  private damping: number;
 
-  constructor() {
+  constructor(radius: number = 150, duration: number = 10, damping: number = 0.99) {
     this.explosionX = null;
     this.explosionY = null;
     this.explosionTimer = 0;
     this.explosionStrength = 0;
+    this.explosionRadius = radius;
+    this.explosionDuration = duration;
+    this.damping = damping;
   }
 
   // Вызов взрыва (из ParticleSystem)
@@ -23,7 +34,7 @@ export class ExplosionBehavior implements IBehavior {
     this.explosionX = x;
     this.explosionY = y;
     this.explosionStrength = strength;
-    this.explosionTimer = 10; // Длительность эффекта (кадров)
+    this.explosionTimer = this.explosionDuration;
   }
 
   apply(particles: Particle[], mouseX?: number, mouseY?: number): void {
@@ -34,8 +45,8 @@ export class ExplosionBehavior implements IBehavior {
         const dy = p.y - this.explosionY;
         const dist = Math.hypot(dx, dy);
         
-        if (dist < 150) {
-          const power = (1 - dist / 150) * this.explosionStrength;
+        if (dist < this.explosionRadius && dist > 0) {
+          const power = (1 - dist / this.explosionRadius) * this.explosionStrength;
           const ndx = dx / dist;
           const ndy = dy / dist;
           p.vx += ndx * power;
@@ -51,8 +62,8 @@ export class ExplosionBehavior implements IBehavior {
     
     // Торможение частиц
     for (const p of particles) {
-      p.vx *= 0.99;
-      p.vy *= 0.99;
+      p.vx *= this.damping;
+      p.vy *= this.damping;
       
       const speed = Math.hypot(p.vx, p.vy);
       if (speed < 0.05) {

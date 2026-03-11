@@ -245,6 +245,21 @@
                 });
                 updateRepulseParams();
             }
+            else if (behavior === 'followMouse') {
+                paramContainer.innerHTML = `
+                    <label>🐭 Скорость: <input type="range" id="follow-speed" min="0.5" max="10" step="0.5" value="2"> <span id="fspeed-val">2</span></label>
+                `;
+                const speedSlider = document.getElementById('follow-speed');
+                const speedVal = document.getElementById('fspeed-val');
+                const updateFollow = () => {
+                    ps.setBehavior('followMouse', { speed: parseFloat(speedSlider.value) });
+                };
+                speedSlider.addEventListener('input', () => {
+                    speedVal.textContent = speedSlider.value;
+                    updateFollow();
+                });
+                updateFollow();
+            }
             else if (behavior === 'gravity') {
                 paramContainer.innerHTML = `
                     <label>🌍 Сила: <input type="range" id="gravity-strength" min="0.02" max="0.3" step="0.01" value="${gravityStrength}"> <span id="strength-val">${gravityStrength}</span></label>
@@ -323,12 +338,57 @@
                 });
                 updateMagParams();
             }
+            else if (behavior === 'explosion') {
+                paramContainer.innerHTML = `
+                    <label>💥 Радиус взрыва: <input type="range" id="explode-radius" min="50" max="300" step="10" value="150"> <span id="erad-val">150</span></label>
+                    <label>⏱️ Длительность: <input type="range" id="explode-duration" min="5" max="30" step="1" value="10"> <span id="edur-val">10</span></label>
+                    <label>🛑 Торможение: <input type="range" id="explode-damping" min="0.95" max="0.999" step="0.001" value="0.99"> <span id="edamp-val">0.99</span></label>
+                `;
+                
+                const radiusSlider = document.getElementById('explode-radius');
+                const radiusVal = document.getElementById('erad-val');
+                const durationSlider = document.getElementById('explode-duration');
+                const durationVal = document.getElementById('edur-val');
+                const dampingSlider = document.getElementById('explode-damping');
+                const dampingVal = document.getElementById('edamp-val');
+                
+                const updateExplosion = () => {
+                    ps.setBehavior('explosion', {
+                        radius: parseFloat(radiusSlider.value),
+                        duration: parseInt(durationSlider.value),
+                        damping: parseFloat(dampingSlider.value)
+                    });
+                    // После обновления параметров пересоздаём обработчик клика
+                    setupExplosionListeners();
+                };
+                
+                radiusSlider.addEventListener('input', () => {
+                    radiusVal.textContent = radiusSlider.value;
+                    updateExplosion();
+                });
+                durationSlider.addEventListener('input', () => {
+                    durationVal.textContent = durationSlider.value;
+                    updateExplosion();
+                });
+                dampingSlider.addEventListener('input', () => {
+                    dampingVal.textContent = dampingSlider.value;
+                    updateExplosion();
+                });
+                
+                ps.setBehavior('explosion');
+                setupExplosionListeners();
+                updateExplosion();
+            }
             else if (behavior === 'wave') {
                 paramContainer.innerHTML = `
                     <label>🌊 Амплитуда: <input type="range" id="wave-amp" min="0.1" max="2.0" step="0.1" value="0.8"> <span id="amp-val">0.8</span></label>
                     <label>📏 Частота: <input type="range" id="wave-freq" min="0.005" max="0.04" step="0.001" value="0.015"> <span id="freq-val">0.015</span></label>
-                    <label>⚡ Скорость: <input type="range" id="wave-speed" min="0.01" max="0.08" step="0.005" value="0.03"> <span id="speed-val">0.03</span></label>
+                    <label>⚡ Скорость волны: <input type="range" id="wave-speed" min="0.1" max="0.8" step="0.005" value="0.03"> <span id="speed-val">0.03</span></label>
+                    <label>🏃 Макс. скорость частиц: <input type="range" id="wave-maxspeed" min="1" max="6" step="0.5" value="3"> <span id="wmaxspeed-val">3</span></label>
                 `;
+
+                const maxSpeedSlider = document.getElementById('wave-maxspeed');
+                const maxSpeedVal = document.getElementById('wmaxspeed-val');
                 
                 const ampSlider = document.getElementById('wave-amp');
                 const ampVal = document.getElementById('amp-val');
