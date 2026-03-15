@@ -120,6 +120,20 @@
     <canvas id="particle-canvas"></canvas>
     
     <div class="panel">
+        <div class="param-panel" style="margin-right: auto;">
+            <label>🔢 Частиц: <input type="range" id="particle-count" min="100" max="15000" step="100" value="10000"> <span id="count-val">10000</span></label>
+            <label>📏 Размер: <input type="range" id="particle-size" min="2" max="10" step="0.5" value="4"> <span id="size-val">4</span></label>
+            <label>🎨 Форма: 
+                <select id="particle-shape">
+                    <option value="square">Квадрат</option>
+                    <option value="circle">Круг</option>
+                    <option value="triangle">Треугольник</option>
+                </select>
+            </label>
+            <label>⚡ Нач. скорость: <input type="range" id="init-speed" min="0.5" max="3" step="0.1" value="1.5"> <span id="speed-val">1.5</span></label>
+            <label>🎨 Цвета: <input type="text" id="colors-list" placeholder="#FF69B4,#FFFFFF" size="30" value="#FF69B4,#FFFFFF,#00FFAA,#FFAA00,#00AAFF"></label>
+            <button id="apply-particle-params">Применить</button>
+        </div>
         <div class="controls-left">
             <select id="behavior-select">
                 <option value="followMouse">🐭 Следование за курсором</option>
@@ -137,7 +151,7 @@
     </div>
     
     <div class="info">
-        <div>📊 Частиц: <span id="particle-count">800</span></div>
+        <div>📊 Частиц: <span id="info-particle-count">10000</span></div>
         <div>🎮 Поведение: <span id="current-behavior">followMouse</span></div>
         <div>🖱️ <span id="hint">Двигай мышью</span></div>
     </div>
@@ -169,9 +183,31 @@
                 colors: ['#FF69B4', '#FFFFFF', '#00FFAA', '#FFAA00', '#00AAFF', '#FF6B6B', '#4ECDC4'],
                 particleSize: 4,
                 maxSpeed: 2,
-                behavior: 'followMouse'
+                behavior: 'followMouse',
+                shape: 'square',
+                initSpeed: 1.5
             }
         };
+        
+        // Управление параметрами частиц
+        const countSlider = document.getElementById('particle-count');
+        const countVal = document.getElementById('count-val');
+        const sizeSlider = document.getElementById('particle-size');
+        const sizeVal = document.getElementById('size-val');
+        const shapeSelect = document.getElementById('particle-shape');
+        const initSpeedSlider = document.getElementById('init-speed');
+        const initSpeedVal = document.getElementById('speed-val');
+        const colorsInput = document.getElementById('colors-list');
+        const applyBtn = document.getElementById('apply-particle-params');
+        
+        // Установка начальных значений
+        countSlider.value = baseConfig.config.particleCount;
+        countVal.textContent = baseConfig.config.particleCount;
+        sizeSlider.value = baseConfig.config.particleSize;
+        sizeVal.textContent = baseConfig.config.particleSize;
+        initSpeedSlider.value = baseConfig.config.initSpeed;
+        initSpeedVal.textContent = baseConfig.config.initSpeed;
+        colorsInput.value = baseConfig.config.colors.join(',');
         
         // Функция обновления параметров для Repulse
         function updateRepulseParams() {
@@ -191,11 +227,7 @@
         function updateVortexParams() {
             const strength = parseFloat(document.getElementById('vortex-strength')?.value || 0.15);
             const maxSpeed = parseFloat(document.getElementById('vortex-maxspeed')?.value || 4);
-            ps.setBehavior('vortex', { 
-                strength: strength, 
-                radius: 300, 
-                maxSpeed: maxSpeed 
-            });
+            ps.setBehavior('vortex', { strength: strength, radius: 300, maxSpeed: maxSpeed });
         }
         
         // Функция обновления параметров для MagneticField
@@ -210,21 +242,72 @@
             ps.setBehavior('wave', { amplitude: amplitude, frequency: 0.02, mouseInfluence: 2.0 });
         }
         
+        // Обработчик для взрыва
+        function setupExplosionListeners() {
+            if (window._explosionHandler) {
+                canvas.removeEventListener('click', window._explosionHandler);
+            }
+            const handler = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                if (ps['behavior'] && ps['behavior']['explode']) {
+                    ps['behavior']['explode'](x, y, 8);
+                }
+            };
+            canvas.addEventListener('click', handler);
+            window._explosionHandler = handler;
+        }
+        
+        applyBtn.addEventListener('click', async () => {
+            const newCount = parseInt(countSlider.value);
+            const newSize = parseFloat(sizeSlider.value);
+            const newShape = shapeSelect.value;
+            const newInitSpeed = parseFloat(initSpeedSlider.value);
+            let newColors = colorsInput.value.split(',').map(c => c.trim());
+            if (newColors.length === 0) newColors = ['#FF69B4', '#FFFFFF'];
+            
+            ps.destroy();
+            await ps.init({
+                canvas: canvas,
+                config: {
+                    particleCount: newCount,
+                    colors: newColors,
+                    particleSize: newSize,
+                    maxSpeed: 2,
+                    behavior: select.value,
+                    shape: newShape,
+                    initSpeed: newInitSpeed
+                }
+            });
+            
+            if (select.value === 'repulse') updateRepulseParams();
+            else if (select.value === 'gravity') updateGravityParams();
+            else if (select.value === 'vortex') updateVortexParams();
+            else if (select.value === 'magneticField') updateMagneticParams();
+            else if (select.value === 'wave') updateWaveParams();
+            else if (select.value === 'explosion') {
+                ps.setBehavior('explosion');
+                setupExplosionListeners();
+            } else {
+                ps.setBehavior(select.value);
+            }
+            
+            document.getElementById('info-particle-count').innerText = newCount;
+        });
+        
         // Обработчик смены поведения
         select.addEventListener('change', async () => {
             const behavior = select.value;
             currentSpan.textContent = behavior;
             
-            // Обновляем подсказку
             if (behavior === 'gravity') hintSpan.textContent = 'Зажми ЛКМ и двигай';
             else if (behavior === 'explosion') hintSpan.textContent = 'Кликни ЛКМ для взрыва';
             else if (behavior === 'vortex') hintSpan.textContent = 'Води мышью — вихрь';
             else hintSpan.textContent = 'Двигай мышью';
             
-            // Очищаем панель параметров
             paramContainer.innerHTML = '';
             
-            // Добавляем специфичные параметры для каждого поведения
             if (behavior === 'repulse') {
                 paramContainer.innerHTML = `
                     <label>📏 Радиус: <input type="range" id="repulse-radius" min="50" max="300" value="${repulseRadius}"> <span id="radius-val">${repulseRadius}</span></label>
@@ -277,22 +360,18 @@
                     <label>🌀 Сила: <input type="range" id="vortex-strength" min="0.05" max="2.5" step="0.01" value="${vortexStrength}"> <span id="vortex-strength-val">${vortexStrength}</span></label>
                     <label>⚡ Макс. скорость: <input type="range" id="vortex-maxspeed" min="1" max="8" step="0.5" value="4"> <span id="vortex-maxspeed-val">4</span></label>
                 `;
-                
                 const strengthSlider = document.getElementById('vortex-strength');
                 const strengthVal = document.getElementById('vortex-strength-val');
+                const maxSpeedSlider = document.getElementById('vortex-maxspeed');
+                const maxSpeedVal = document.getElementById('vortex-maxspeed-val');
                 strengthSlider.addEventListener('input', () => {
                     strengthVal.textContent = strengthSlider.value;
                     updateVortexParams();
                 });
-                
-                // Добавляем обработчик для maxSpeed
-                const maxSpeedSlider = document.getElementById('vortex-maxspeed');
-                const maxSpeedVal = document.getElementById('vortex-maxspeed-val');
                 maxSpeedSlider.addEventListener('input', () => {
                     maxSpeedVal.textContent = maxSpeedSlider.value;
                     updateVortexParams();
                 });
-                
                 updateVortexParams();
             }
             else if (behavior === 'magneticField') {
@@ -302,7 +381,6 @@
                     <label>📏 Радиус: <input type="range" id="magnetic-radius" min="50" max="300" step="10" value="200"> <span id="mag-radius-val">200</span></label>
                     <label>🏃 Макс. скорость: <input type="range" id="magnetic-maxspeed" min="2" max="8" step="0.5" value="4"> <span id="mag-maxspeed-val">4</span></label>
                 `;
-                
                 const strengthSlider = document.getElementById('magnetic-strength');
                 const strengthVal = document.getElementById('mag-val');
                 const fieldStrengthSlider = document.getElementById('magnetic-field-strength');
@@ -344,24 +422,20 @@
                     <label>⏱️ Длительность: <input type="range" id="explode-duration" min="5" max="30" step="1" value="10"> <span id="edur-val">10</span></label>
                     <label>🛑 Торможение: <input type="range" id="explode-damping" min="0.95" max="0.999" step="0.001" value="0.99"> <span id="edamp-val">0.99</span></label>
                 `;
-                
                 const radiusSlider = document.getElementById('explode-radius');
                 const radiusVal = document.getElementById('erad-val');
                 const durationSlider = document.getElementById('explode-duration');
                 const durationVal = document.getElementById('edur-val');
                 const dampingSlider = document.getElementById('explode-damping');
                 const dampingVal = document.getElementById('edamp-val');
-                
                 const updateExplosion = () => {
                     ps.setBehavior('explosion', {
                         radius: parseFloat(radiusSlider.value),
                         duration: parseInt(durationSlider.value),
                         damping: parseFloat(dampingSlider.value)
                     });
-                    // После обновления параметров пересоздаём обработчик клика
                     setupExplosionListeners();
                 };
-                
                 radiusSlider.addEventListener('input', () => {
                     radiusVal.textContent = radiusSlider.value;
                     updateExplosion();
@@ -374,7 +448,6 @@
                     dampingVal.textContent = dampingSlider.value;
                     updateExplosion();
                 });
-                
                 ps.setBehavior('explosion');
                 setupExplosionListeners();
                 updateExplosion();
@@ -386,31 +459,24 @@
                     <label>⚡ Скорость волны: <input type="range" id="wave-speed" min="0.1" max="0.8" step="0.005" value="0.03"> <span id="speed-val">0.03</span></label>
                     <label>🏃 Макс. скорость частиц: <input type="range" id="wave-maxspeed" min="1" max="6" step="0.5" value="3"> <span id="wmaxspeed-val">3</span></label>
                 `;
-
-                const maxSpeedSlider = document.getElementById('wave-maxspeed');
-                const maxSpeedVal = document.getElementById('wmaxspeed-val');
-                
                 const ampSlider = document.getElementById('wave-amp');
                 const ampVal = document.getElementById('amp-val');
                 const freqSlider = document.getElementById('wave-freq');
                 const freqVal = document.getElementById('freq-val');
                 const speedSlider = document.getElementById('wave-speed');
                 const speedVal = document.getElementById('speed-val');
-                
                 const updateWave = () => {
                     const amplitude = parseFloat(ampSlider.value);
                     const frequency = parseFloat(freqSlider.value);
                     const speed = parseFloat(speedSlider.value);
                     ps.setBehavior('wave', { amplitude, frequency, speed });
                 };
-                
                 ampSlider.addEventListener('input', () => { ampVal.textContent = ampSlider.value; updateWave(); });
                 freqSlider.addEventListener('input', () => { freqVal.textContent = freqSlider.value; updateWave(); });
                 speedSlider.addEventListener('input', () => { speedVal.textContent = speedSlider.value; updateWave(); });
                 updateWave();
             }
-                        
-            // Устанавливаем поведение
+            
             if (behavior === 'repulse') updateRepulseParams();
             else if (behavior === 'gravity') updateGravityParams();
             else if (behavior === 'vortex') updateVortexParams();
@@ -418,7 +484,6 @@
             else if (behavior === 'wave') updateWaveParams();
             else if (behavior === 'explosion') {
                 ps.setBehavior('explosion');
-                // Для взрыва используем отдельную обработку кликов
                 setupExplosionListeners();
             }
             else {
@@ -426,39 +491,21 @@
             }
         });
         
-        // Обработчик для взрыва
-        let explosionBehavior = null;
-        function setupExplosionListeners() {
-            if (window._explosionHandler) {
-                canvas.removeEventListener('click', window._explosionHandler);
-            }
-            const handler = (e) => {
-                const rect = canvas.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                // Временно получаем поведение и вызываем взрыв
-                if (ps['behavior'] && ps['behavior']['explode']) {
-                    ps['behavior']['explode'](x, y, 8);
-                }
-            };
-            canvas.addEventListener('click', handler);
-            window._explosionHandler = handler;
-        }
-        
         // Сброс частиц
         resetBtn.addEventListener('click', async () => {
             ps.destroy();
             await ps.init({
                 canvas: canvas,
                 config: {
-                    particleCount: 800,
+                    particleCount: 10000,
                     colors: ['#FF69B4', '#FFFFFF', '#00FFAA', '#FFAA00', '#00AAFF', '#FF6B6B', '#4ECDC4'],
                     particleSize: 4,
                     maxSpeed: 2,
-                    behavior: select.value
+                    behavior: select.value,
+                    shape: 'square',
+                    initSpeed: 1.5
                 }
             });
-            // Обновляем параметры после сброса
             if (select.value === 'repulse') updateRepulseParams();
             else if (select.value === 'gravity') updateGravityParams();
             else if (select.value === 'vortex') updateVortexParams();
@@ -468,20 +515,19 @@
                 ps.setBehavior('explosion');
                 setupExplosionListeners();
             }
-            document.getElementById('particle-count').innerText = '800';
+            document.getElementById('info-particle-count').innerText = '10000';
         });
         
         // Инициализация
         await ps.init(baseConfig);
-        document.getElementById('particle-count').innerText = '800';
+        document.getElementById('info-particle-count').innerText = '10000';
         
-        // Адаптация при изменении размера окна
         window.addEventListener('resize', () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
         });
         
-        console.log('Particle Library Demo готов! 7 поведений');
+        console.log('Particle Library Demo готов! 7 поведений + настройка частиц');
     </script>
 </body>
 </html>

@@ -6,6 +6,8 @@ export interface ParticleConfig {
   behavior: string;
   behaviorParams?: Record<string, any>;
   isPublic?: boolean;
+  shape?: string;      // 'square', 'circle', 'triangle'
+  initSpeed?: number;  // начальная скорость частиц
 }
 
 export class ConfigLoader {
@@ -15,12 +17,10 @@ export class ConfigLoader {
     this.apiUrl = apiUrl;
   }
 
-  // Загрузка локальной конфигурации
   loadLocal(config: ParticleConfig): ParticleConfig {
     return config;
   }
 
-  // Загрузка конфигурации с сервера по ID пресета
   async loadRemote(presetId: string): Promise<ParticleConfig> {
     if (!this.apiUrl) {
       throw new Error('API URL is not configured');

@@ -1,4 +1,4 @@
-import { Particle } from './Particle';
+import { Particle, ParticleShape } from './Particle';
 import { IBehavior } from '../behaviors/IBehavior';
 import { FollowMouseBehavior } from '../behaviors/FollowMouseBehavior';
 import { GravityBehavior } from '../behaviors/GravityBehavior';
@@ -72,14 +72,24 @@ export class ParticleSystem {
 
   private createParticles(config: ParticleConfig): void {
     this.particles = [];
+    const shape = (config.shape as ParticleShape) || 'square';
+    const initSpeed = config.initSpeed ?? 1.5;
+    
     for (let i = 0; i < config.particleCount; i++) {
       const x = Math.random() * this.canvas.width;
       const y = Math.random() * this.canvas.height;
-      const vx = (Math.random() - 0.5) * 1.5;
-      const vy = (Math.random() - 0.5) * 1.5;
+      const vx = (Math.random() - 0.5) * initSpeed;
+      const vy = (Math.random() - 0.5) * initSpeed;
       const color = config.colors[Math.floor(Math.random() * config.colors.length)];
       const size = config.particleSize;
-      this.particles.push(new Particle(x, y, vx, vy, size, color));
+      this.particles.push(new Particle(x, y, vx, vy, size, color, shape));
+    }
+  }
+
+  // Обновление параметров частиц (без пересоздания всех)
+  updateParticleParams(params: { shape?: ParticleShape; initSpeed?: number }): void {
+    for (const p of this.particles) {
+      if (params.shape !== undefined) p.shape = params.shape;
     }
   }
 
@@ -198,6 +208,7 @@ export class ParticleSystem {
     for (let i = 0; i < this.particles.length; i++) {
       this.particles[i].update();
       
+      // Проверка границ
       if (this.particles[i].x > this.canvas.width) this.particles[i].x = -this.particles[i].size;
       if (this.particles[i].x < -this.particles[i].size) this.particles[i].x = this.canvas.width;
       if (this.particles[i].y > this.canvas.height) this.particles[i].y = -this.particles[i].size;
