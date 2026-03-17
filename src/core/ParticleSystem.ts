@@ -30,10 +30,27 @@ export class ParticleSystem {
   private isMouseDown: boolean = false;
   private explosionBehavior: ExplosionBehavior | null = null;
   private canvasBgColor: string = 'black';
+  
+  // FPS контроль
+  private targetFps: number = 60;
+  private lastTimestamp: number = 0;
+  private frameInterval: number = 1000 / 60;
+  private frameCount: number = 0;      // Счётчик реально отрисованных кадров
+  private lastFpsUpdate: number = 0;
+  private actualFps: number = 0;
 
   constructor() {
     this.behavior = new FollowMouseBehavior();
     this.configLoader = new ConfigLoader();
+  }
+
+  setTargetFps(fps: number): void {
+    this.targetFps = Math.max(15, Math.min(120, fps));
+    this.frameInterval = 1000 / this.targetFps;
+  }
+
+  getActualFps(): number {
+    return this.actualFps;
   }
 
   async init(config: ParticleSystemConfig): Promise<void> {
@@ -47,7 +64,6 @@ export class ParticleSystem {
       throw new Error('Either canvasId or canvas element must be provided');
     }
 
-    // Настройка canvas — центрирование через CSS
     this.canvas.style.position = 'absolute';
     this.canvas.style.top = '50%';
     this.canvas.style.left = '50%';
@@ -97,7 +113,6 @@ export class ParticleSystem {
     }
   }
 
-  // Меняем ТОЛЬКО цвет canvas (не body)
   setBackgroundColor(color: string): void {
     this.canvasBgColor = color;
   }
@@ -109,7 +124,6 @@ export class ParticleSystem {
   setCanvasSize(width: number, height: number): void {
     this.canvas.width = width;
     this.canvas.height = height;
-    // Пересоздаём частицы с новыми границами
     const currentCount = this.particles.length;
     const currentSize = this.particles[0]?.size || 4;
     const currentColors = [...new Set(this.particles.map(p => p.color))];
@@ -232,25 +246,41 @@ export class ParticleSystem {
     });
   }
 
-  private animate = (): void => {
+  // Анимация с контролем FPS
+  private animate = (timestamp: number): void => {
     if (!this.isRunning) return;
     
-    // Заливка только canvas выбранным цветом
-    this.ctx.fillStyle = this.canvasBgColor;
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    
-    this.behavior.apply(this.particles);
-    
-    for (let i = 0; i < this.particles.length; i++) {
-      this.particles[i].update();
+    // Контроль FPS: пропускаем кадр, если прошло недостаточно времени
+    const deltaTime = timestamp - this.lastTimestamp;
+    if (deltaTime >= this.frameInterval) {
+      // Реальный отрисованный кадр — увеличиваем счётчик
+      this.frameCount++;
       
-      // Проверка границ с новыми размерами canvas
-      if (this.particles[i].x > this.canvas.width) this.particles[i].x = -this.particles[i].size;
-      if (this.particles[i].x < -this.particles[i].size) this.particles[i].x = this.canvas.width;
-      if (this.particles[i].y > this.canvas.height) this.particles[i].y = -this.particles[i].size;
-      if (this.particles[i].y < -this.particles[i].size) this.particles[i].y = this.canvas.height;
+      // Отрисовка кадра
+      this.ctx.fillStyle = this.canvasBgColor;
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
       
-      this.particles[i].draw(this.ctx);
+      this.behavior.apply(this.particles);
+      
+      for (let i = 0; i < this.particles.length; i++) {
+        this.particles[i].update();
+        
+        if (this.particles[i].x > this.canvas.width) this.particles[i].x = -this.particles[i].size;
+        if (this.particles[i].x < -this.particles[i].size) this.particles[i].x = this.canvas.width;
+        if (this.particles[i].y > this.canvas.height) this.particles[i].y = -this.particles[i].size;
+        if (this.particles[i].y < -this.particles[i].size) this.particles[i].y = this.canvas.height;
+        
+        this.particles[i].draw(this.ctx);
+      }
+      
+      this.lastTimestamp = timestamp;
+    }
+    
+    // Расчёт реального FPS (по отрисованным кадрам, раз в секунду)
+    if (timestamp - this.lastFpsUpdate >= 1000) {
+      this.actualFps = this.frameCount;
+      this.frameCount = 0;
+      this.lastFpsUpdate = timestamp;
     }
     
     this.animationId = requestAnimationFrame(this.animate);
@@ -259,6 +289,9 @@ export class ParticleSystem {
   start(): void {
     if (this.isRunning) return;
     this.isRunning = true;
+    this.lastTimestamp = 0;
+    this.lastFpsUpdate = 0;
+    this.frameCount = 0;
     this.animationId = requestAnimationFrame(this.animate);
   }
 

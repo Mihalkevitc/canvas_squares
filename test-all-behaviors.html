@@ -161,6 +161,8 @@
         <div>📊 Частиц: <span id="info-particle-count">10000</span></div>
         <div>🎮 Поведение: <span id="current-behavior">followMouse</span></div>
         <div>🖱️ <span id="hint">Двигай мышью</span></div>
+        <label>⚡ Целевой FPS: <input type="range" id="target-fps" min="15" max="120" step="5" value="60"> <span id="fps-val">60</span></label>
+        <label>📊 Реальный FPS: <span id="real-fps">0</span></label>
     </div>
     <div class="badge">Particle Library | 7 behaviors + настройки холста</div>
     
@@ -549,6 +551,29 @@
         document.getElementById('info-particle-count').innerText = '10000';
         
         window.addEventListener('resize', () => {});
+
+        // ===== НАСТРОЙКА FPS (после создания ps) =====
+        const fpsSlider = document.getElementById('target-fps');
+        const fpsVal = document.getElementById('fps-val');
+        const realFpsSpan = document.getElementById('real-fps');
+
+        if (fpsSlider) {
+            // Устанавливаем начальное значение FPS в библиотеке
+            ps.setTargetFps(parseInt(fpsSlider.value));
+            
+            fpsSlider.addEventListener('input', () => {
+                const fps = parseInt(fpsSlider.value);
+                fpsVal.textContent = fps;
+                ps.setTargetFps(fps);
+            });
+        }
+
+        // Обновление реального FPS каждые 500 мс
+        setInterval(() => {
+            if (realFpsSpan && ps.getActualFps) {
+                realFpsSpan.textContent = ps.getActualFps();
+            }
+        }, 500);
         
         console.log('Particle Library Demo готов! 7 поведений + настройки холста');
     </script>
