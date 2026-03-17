@@ -29,6 +29,7 @@ export class ParticleSystem {
   private gravityBehavior: GravityBehavior | null = null;
   private isMouseDown: boolean = false;
   private explosionBehavior: ExplosionBehavior | null = null;
+  private canvasBgColor: string = 'black';
 
   constructor() {
     this.behavior = new FollowMouseBehavior();
@@ -46,16 +47,19 @@ export class ParticleSystem {
       throw new Error('Either canvasId or canvas element must be provided');
     }
 
-    this.canvas.width = window.innerWidth;
-    this.canvas.height = window.innerHeight;
+    // Настройка canvas — центрирование через CSS
     this.canvas.style.position = 'absolute';
-    this.canvas.style.top = '0px';
-    this.canvas.style.left = '0px';
+    this.canvas.style.top = '50%';
+    this.canvas.style.left = '50%';
+    this.canvas.style.transform = 'translate(-50%, -50%)';
     this.canvas.style.border = '1px solid black';
+    
+    this.resizeCanvas();
     
     document.body.style.overflow = 'hidden';
     document.body.style.margin = '0';
-    document.body.style.background = 'black';
+    document.body.style.padding = '0';
+    document.body.style.backgroundColor = 'black';
     
     this.ctx = this.canvas.getContext('2d')!;
     
@@ -68,6 +72,13 @@ export class ParticleSystem {
     
     this.setupMouseListeners();
     this.start();
+  }
+
+  private resizeCanvas(): void {
+    const width = window.innerWidth * 0.9;
+    const height = window.innerHeight * 0.8;
+    this.canvas.width = width;
+    this.canvas.height = height;
   }
 
   private createParticles(config: ParticleConfig): void {
@@ -86,7 +97,34 @@ export class ParticleSystem {
     }
   }
 
-  // Обновление параметров частиц (без пересоздания всех)
+  // Меняем ТОЛЬКО цвет canvas (не body)
+  setBackgroundColor(color: string): void {
+    this.canvasBgColor = color;
+  }
+
+  setBorderRadius(radius: string): void {
+    this.canvas.style.borderRadius = radius;
+  }
+
+  setCanvasSize(width: number, height: number): void {
+    this.canvas.width = width;
+    this.canvas.height = height;
+    // Пересоздаём частицы с новыми границами
+    const currentCount = this.particles.length;
+    const currentSize = this.particles[0]?.size || 4;
+    const currentColors = [...new Set(this.particles.map(p => p.color))];
+    const currentShape = this.particles[0]?.shape || 'square';
+    this.createParticles({
+      particleCount: currentCount,
+      colors: currentColors,
+      particleSize: currentSize,
+      maxSpeed: 2,
+      behavior: this.currentBehaviorName,
+      shape: currentShape,
+      initSpeed: 1.5
+    });
+  }
+
   updateParticleParams(params: { shape?: ParticleShape; initSpeed?: number }): void {
     for (const p of this.particles) {
       if (params.shape !== undefined) p.shape = params.shape;
@@ -152,7 +190,6 @@ export class ParticleSystem {
   }
 
   private setupMouseListeners(): void {
-    // Нажатие мыши
     this.canvas.addEventListener('mousedown', (event) => {
       const rect = this.canvas.getBoundingClientRect();
       const mouseX = event.clientX - rect.left;
@@ -166,7 +203,6 @@ export class ParticleSystem {
       }
     });
 
-    // Движение мыши
     this.canvas.addEventListener('mousemove', (event) => {
       const rect = this.canvas.getBoundingClientRect();
       const mouseX = event.clientX - rect.left;
@@ -179,7 +215,6 @@ export class ParticleSystem {
       }
     });
 
-    // Отпускание мыши
     this.canvas.addEventListener('mouseup', () => {
       if (this.currentBehaviorName === 'gravity' && this.gravityBehavior) {
         this.gravityBehavior.clearCenter();
@@ -187,7 +222,6 @@ export class ParticleSystem {
       }
     });
 
-    // Клик для взрыва
     this.canvas.addEventListener('click', (event) => {
       if (this.currentBehaviorName === 'explosion' && this.explosionBehavior) {
         const rect = this.canvas.getBoundingClientRect();
@@ -201,14 +235,16 @@ export class ParticleSystem {
   private animate = (): void => {
     if (!this.isRunning) return;
     
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    // Заливка только canvas выбранным цветом
+    this.ctx.fillStyle = this.canvasBgColor;
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     
     this.behavior.apply(this.particles);
     
     for (let i = 0; i < this.particles.length; i++) {
       this.particles[i].update();
       
-      // Проверка границ
+      // Проверка границ с новыми размерами canvas
       if (this.particles[i].x > this.canvas.width) this.particles[i].x = -this.particles[i].size;
       if (this.particles[i].x < -this.particles[i].size) this.particles[i].x = this.canvas.width;
       if (this.particles[i].y > this.canvas.height) this.particles[i].y = -this.particles[i].size;
