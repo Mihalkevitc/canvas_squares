@@ -1,26 +1,19 @@
 {
   "name": "@mihalkevitc/particle-lib",
   "version": "1.0.0",
-  "type": "module",
+  "description": "Interactive particle visualization library",
   "main": "./dist/particle-lib.umd.js",
   "module": "./dist/particle-lib.es.js",
   "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/particle-lib.es.js",
-      "require": "./dist/particle-lib.umd.js"
-    }
-  },
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
   "files": ["dist"],
-  "devDependencies": {
-    "@rollup/plugin-typescript": "^12.3.0",
-    "typescript": "^6.0.3",
-    "vite": "^6.4.2"
+  "scripts": {
+    "build": "vite build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mihalkevitc/particle-lib.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
   }
 }
