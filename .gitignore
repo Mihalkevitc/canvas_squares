@@ -2,8 +2,7 @@
 node_modules/
 
 # Сборка
-dist/
-*.tsbuildinfo
+
 
 # Логи
 *.log
