@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Particle Library - CDN Test</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: black; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        canvas {
+            border-radius: 16px;
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+            display: block;
+        }
+        .info {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <!-- Только атрибуты width/height, CSS-размер не нужен -->
+    <canvas id="particle-canvas" width="900" height="600"></canvas>
+    <div class="info">
+        <strong>✨ Particle Library</strong><br>
+        Частицы следуют за курсором
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/gh/Mihalkevitc/particle-lib@main/dist/particle-lib.umd.js"></script>
+    
+    <script>
+        const canvas = document.getElementById('particle-canvas');
+        
+        const ps = new ParticleLib.ParticleSystem();
+        
+        ps.init({
+            canvas: canvas,
+            config: {
+                particleCount: 3000,
+                colors: ['#FF69B4', '#FFFFFF', '#00FFAA', '#FFAA00', '#00AAFF'],
+                particleSize: 4,
+                maxSpeed: 2,
+                behavior: 'followMouse'
+            }
+        });
+    </script>
+</body>
+</html>
