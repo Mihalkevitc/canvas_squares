@@ -1,7 +1,7 @@
-class p {
+class f {
   // форма
-  constructor(i, t, s, e, o, n, h = "square") {
-    this.x = i, this.y = t, this.vx = s, this.vy = e, this.size = o, this.color = n, this.shape = h;
+  constructor(i, t, s, e, n, o, h = "square") {
+    this.x = i, this.y = t, this.vx = s, this.vy = e, this.size = n, this.color = o, this.shape = h;
   }
   // Обновление позиции по скорости
   update() {
@@ -32,13 +32,13 @@ class y {
   apply(i, t, s) {
     if (!(t === void 0 || s === void 0))
       for (const e of i) {
-        const o = t - e.x, n = s - e.y;
-        let h = o * o + n * n;
-        h > 0 && (h = Math.sqrt(h), e.vx = o / h * this.speed, e.vy = n / h * this.speed);
+        const n = t - e.x, o = s - e.y;
+        let h = n * n + o * o;
+        h > 0 && (h = Math.sqrt(h), e.vx = n / h * this.speed, e.vy = o / h * this.speed);
       }
   }
 }
-class f {
+class p {
   constructor(i = 0.1, t = 4) {
     this.strength = i, this.maxSpeed = t, this.centerX = null, this.centerY = null;
   }
@@ -53,10 +53,10 @@ class f {
   apply(i) {
     if (!(this.centerX === null || this.centerY === null))
       for (const t of i) {
-        const s = this.centerX - t.x, e = this.centerY - t.y, o = Math.hypot(s, e);
-        if (o > 0) {
-          const n = this.strength * o, h = s / o, c = e / o;
-          t.vx += h * n, t.vy += c * n;
+        const s = this.centerX - t.x, e = this.centerY - t.y, n = Math.hypot(s, e);
+        if (n > 0) {
+          const o = this.strength * n, h = s / n, c = e / n;
+          t.vx += h * o, t.vy += c * o;
           const r = Math.hypot(t.vx, t.vy);
           r > this.maxSpeed && (t.vx = t.vx / r * this.maxSpeed, t.vy = t.vy / r * this.maxSpeed);
         }
@@ -73,9 +73,9 @@ class g {
       Math.hypot(e.vx, e.vy) > this.minSpeed && (e.vx *= this.damping, e.vy *= this.damping);
     if (!(t === void 0 || s === void 0))
       for (const e of i) {
-        const o = e.x - t, n = e.y - s, h = Math.hypot(o, n);
+        const n = e.x - t, o = e.y - s, h = Math.hypot(n, o);
         if (h < this.radius && h > 0) {
-          const c = (1 - h / this.radius) * this.force, r = o / h, l = n / h;
+          const c = (1 - h / this.radius) * this.force, r = n / h, l = o / h;
           e.vx += r * c, e.vy += l * c;
         }
       }
@@ -87,15 +87,15 @@ class w {
   }
   apply(i, t, s) {
     for (const e of i) {
-      let o = Math.sin(e.y * 0.01) * this.strength, n = Math.cos(e.x * 0.01) * this.strength;
+      let n = Math.sin(e.y * 0.01) * this.strength, o = Math.cos(e.x * 0.01) * this.strength;
       if (t !== void 0 && s !== void 0) {
         const c = t - e.x, r = s - e.y, l = Math.hypot(c, r);
         if (l < this.radius && l > 0) {
           const d = (1 - l / this.radius) * this.fieldStrength, v = c / l, u = r / l;
-          o += v * d, n += u * d;
+          n += v * d, o += u * d;
         }
       }
-      e.vx += o, e.vy += n;
+      e.vx += n, e.vy += o;
       const h = Math.hypot(e.vx, e.vy);
       h > this.maxSpeed && (e.vx = e.vx / h * this.maxSpeed, e.vy = e.vy / h * this.maxSpeed);
     }
@@ -109,9 +109,9 @@ class S {
   apply(i, t, s) {
     if (!(t === void 0 || s === void 0))
       for (const e of i) {
-        const o = e.x - t, n = e.y - s, h = Math.hypot(o, n);
+        const n = e.x - t, o = e.y - s, h = Math.hypot(n, o);
         if (h < this.radius && h > 0) {
-          const r = -n / h, l = o / h, d = (1 - h / this.radius) * this.strength;
+          const r = -o / h, l = n / h, d = (1 - h / this.radius) * this.strength;
           e.vx += r * d, e.vy += l * d;
           const v = (t - e.x) * 0.01, u = (s - e.y) * 0.01;
           e.vx += v, e.vy += u;
@@ -132,8 +132,8 @@ class B {
     for (const t of i) {
       let s = Math.sin(t.y * this.frequency + x) * this.amplitude, e = Math.cos(t.x * this.frequency + x * 0.5) * this.amplitude;
       t.vx += s, t.vy += e;
-      const o = Math.hypot(t.vx, t.vy);
-      o > this.maxSpeed && (t.vx = t.vx / o * this.maxSpeed, t.vy = t.vy / o * this.maxSpeed);
+      const n = Math.hypot(t.vx, t.vy);
+      n > this.maxSpeed && (t.vx = t.vx / n * this.maxSpeed, t.vy = t.vy / n * this.maxSpeed);
     }
   }
 }
@@ -148,9 +148,9 @@ class b {
   apply(i, t, s) {
     if (this.explosionX !== null && this.explosionTimer > 0) {
       for (const e of i) {
-        const o = e.x - this.explosionX, n = e.y - this.explosionY, h = Math.hypot(o, n);
+        const n = e.x - this.explosionX, o = e.y - this.explosionY, h = Math.hypot(n, o);
         if (h < this.explosionRadius && h > 0) {
-          const c = (1 - h / this.explosionRadius) * this.explosionStrength, r = o / h, l = n / h;
+          const c = (1 - h / this.explosionRadius) * this.explosionStrength, r = n / h, l = o / h;
           e.vx += r * c, e.vy += l * c;
         }
       }
@@ -199,14 +199,15 @@ class C {
     if (i.canvas)
       this.canvas = i.canvas;
     else if (i.canvasId) {
-      const s = document.getElementById(i.canvasId);
-      if (!s) throw new Error("Canvas with id " + i.canvasId + " not found");
-      this.canvas = s;
+      const e = document.getElementById(i.canvasId);
+      if (!e) throw new Error("Canvas with id " + i.canvasId + " not found");
+      this.canvas = e;
     } else
       throw new Error("Either canvasId or canvas element must be provided");
-    this.canvas.style.position = "absolute", this.canvas.style.top = "50%", this.canvas.style.left = "50%", this.canvas.style.transform = "translate(-50%, -50%)", this.canvas.style.border = "1px solid black", this.resizeCanvas(), document.body.style.overflow = "hidden", document.body.style.margin = "0", document.body.style.padding = "0", document.body.style.backgroundColor = "black", this.ctx = this.canvas.getContext("2d");
-    let t = i.config;
-    this.createParticles(t), t.behavior && this.setBehavior(t.behavior, t.behaviorParams), this.setupMouseListeners(), this.start();
+    const t = this.canvas.parentElement !== document.body;
+    t || (this.canvas.style.position = "absolute", this.canvas.style.top = "50%", this.canvas.style.left = "50%", this.canvas.style.transform = "translate(-50%, -50%)", document.body.style.overflow = "hidden", document.body.style.margin = "0", document.body.style.padding = "0", document.body.style.backgroundColor = "black"), this.canvas.style.border = "1px solid black", t || this.resizeCanvas(), this.ctx = this.canvas.getContext("2d");
+    let s = i.config;
+    this.createParticles(s), s.behavior && this.setBehavior(s.behavior, s.behaviorParams), this.setupMouseListeners(), this.start();
   }
   resizeCanvas() {
     const i = window.innerWidth * 0.9, t = window.innerHeight * 0.8;
@@ -216,8 +217,8 @@ class C {
     this.particles = [];
     const t = i.shape || "square", s = i.initSpeed ?? 1.5;
     for (let e = 0; e < i.particleCount; e++) {
-      const o = Math.random() * this.canvas.width, n = Math.random() * this.canvas.height, h = (Math.random() - 0.5) * s, c = (Math.random() - 0.5) * s, r = i.colors[Math.floor(Math.random() * i.colors.length)], l = i.particleSize;
-      this.particles.push(new p(o, n, h, c, l, r, t));
+      const n = Math.random() * this.canvas.width, o = Math.random() * this.canvas.height, h = (Math.random() - 0.5) * s, c = (Math.random() - 0.5) * s, r = i.colors[Math.floor(Math.random() * i.colors.length)], l = i.particleSize;
+      this.particles.push(new f(n, o, h, c, l, r, t));
     }
   }
   setBackgroundColor(i) {
@@ -229,14 +230,14 @@ class C {
   setCanvasSize(i, t) {
     var h, c;
     this.canvas.width = i, this.canvas.height = t;
-    const s = this.particles.length, e = ((h = this.particles[0]) == null ? void 0 : h.size) || 4, o = [...new Set(this.particles.map((r) => r.color))], n = ((c = this.particles[0]) == null ? void 0 : c.shape) || "square";
+    const s = this.particles.length, e = ((h = this.particles[0]) == null ? void 0 : h.size) || 4, n = [...new Set(this.particles.map((r) => r.color))], o = ((c = this.particles[0]) == null ? void 0 : c.shape) || "square";
     this.createParticles({
       particleCount: s,
-      colors: o,
+      colors: n,
       particleSize: e,
       maxSpeed: 2,
       behavior: this.currentBehaviorName,
-      shape: n,
+      shape: o,
       initSpeed: 1.5
     });
   }
@@ -247,7 +248,7 @@ class C {
   setBehavior(i, t) {
     switch (this.currentBehaviorName = i, this.isMouseDown = !1, i) {
       case "gravity":
-        this.gravityBehavior = new f(
+        this.gravityBehavior = new p(
           (t == null ? void 0 : t.strength) ?? 0.1,
           (t == null ? void 0 : t.maxSpeed) ?? 4
         ), this.behavior = this.gravityBehavior;
@@ -341,9 +342,9 @@ export {
   M as ConfigLoader,
   b as ExplosionBehavior,
   y as FollowMouseBehavior,
-  f as GravityBehavior,
+  p as GravityBehavior,
   w as MagneticFieldBehavior,
-  p as Particle,
+  f as Particle,
   C as ParticleSystem,
   z as Renderer,
   g as RepulseBehavior,

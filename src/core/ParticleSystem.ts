@@ -35,7 +35,7 @@ export class ParticleSystem {
   private targetFps: number = 60;
   private lastTimestamp: number = 0;
   private frameInterval: number = 1000 / 60;
-  private frameCount: number = 0;      // Счётчик реально отрисованных кадров
+  private frameCount: number = 0;
   private lastFpsUpdate: number = 0;
   private actualFps: number = 0;
 
@@ -64,18 +64,28 @@ export class ParticleSystem {
       throw new Error('Either canvasId or canvas element must be provided');
     }
 
-    this.canvas.style.position = 'absolute';
-    this.canvas.style.top = '50%';
-    this.canvas.style.left = '50%';
-    this.canvas.style.transform = 'translate(-50%, -50%)';
+    // НЕ применяем стили, если canvas уже имеет родителя с правильным позиционированием
+    // Проверяем, не является ли canvas уже частью существующего DOM с нужными стилями
+    const hasParentContainer = this.canvas.parentElement !== document.body;
+    
+    if (!hasParentContainer) {
+      // Только если canvas добавлен напрямую в body, применяем центрирование
+      this.canvas.style.position = 'absolute';
+      this.canvas.style.top = '50%';
+      this.canvas.style.left = '50%';
+      this.canvas.style.transform = 'translate(-50%, -50%)';
+      document.body.style.overflow = 'hidden';
+      document.body.style.margin = '0';
+      document.body.style.padding = '0';
+      document.body.style.backgroundColor = 'black';
+    }
+    
     this.canvas.style.border = '1px solid black';
     
-    this.resizeCanvas();
-    
-    document.body.style.overflow = 'hidden';
-    document.body.style.margin = '0';
-    document.body.style.padding = '0';
-    document.body.style.backgroundColor = 'black';
+    // НЕ изменяем размер canvas автоматически, если он уже имеет размеры
+    if (!hasParentContainer) {
+      this.resizeCanvas();
+    }
     
     this.ctx = this.canvas.getContext('2d')!;
     
@@ -246,17 +256,13 @@ export class ParticleSystem {
     });
   }
 
-  // Анимация с контролем FPS
   private animate = (timestamp: number): void => {
     if (!this.isRunning) return;
     
-    // Контроль FPS: пропускаем кадр, если прошло недостаточно времени
     const deltaTime = timestamp - this.lastTimestamp;
     if (deltaTime >= this.frameInterval) {
-      // Реальный отрисованный кадр — увеличиваем счётчик
       this.frameCount++;
       
-      // Отрисовка кадра
       this.ctx.fillStyle = this.canvasBgColor;
       this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
       
@@ -276,7 +282,6 @@ export class ParticleSystem {
       this.lastTimestamp = timestamp;
     }
     
-    // Расчёт реального FPS (по отрисованным кадрам, раз в секунду)
     if (timestamp - this.lastFpsUpdate >= 1000) {
       this.actualFps = this.frameCount;
       this.frameCount = 0;
